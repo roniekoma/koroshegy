@@ -37,55 +37,54 @@ export default function RegisterForm() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       console.log("Starting registration process...");
-
-      // 1. Sign up the user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp(
-        {
-          email: data.email,
-          password: data.password,
-        },
-      );
-
+  
+      // 1. Felhasználó regisztrációja Supabase Authentication-ben
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+  
       if (signUpError) {
         console.error("Signup error:", signUpError);
         alert(signUpError.message);
         return;
       }
-
-      if (!authData.user?.id) {
-        console.error("No user ID received");
+  
+      // 2. Ellenőrizd, hogy van-e felhasználói ID
+      const userId = authData.user?.id;
+      if (!userId) {
+        console.error("No user ID received from Supabase");
         alert("Registration failed - no user ID received");
         return;
       }
-
-      console.log("Auth signup successful, user ID:", authData.user.id);
-
-      // 2. Create the user profile
+  
+      console.log("Auth signup successful, user ID:", userId);
+  
+      // 3. A `users` tábla feltöltése a kapott user ID-val
       const { error: profileError } = await supabase.from("users").insert([
         {
-          id: authData.user.id,
+          id: userId, // Az `auth.users` táblából kapott ID kell ide
           name: data.name,
           email: data.email,
           birth_date: data.birthDate,
         },
       ]);
-
+  
       if (profileError) {
         console.error("Profile creation error:", profileError);
         alert("Error creating user profile: " + profileError.message);
         return;
       }
-
+  
       console.log("Profile created successfully");
-      alert(
-        "Registration successful! Please check your email to confirm your account.",
-      );
+      alert("Registration successful! Please check your email to confirm your account.");
       navigate("/login");
     } catch (error) {
       console.error("Unexpected error during registration:", error);
       alert("An unexpected error occurred during registration");
     }
   };
+  
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
