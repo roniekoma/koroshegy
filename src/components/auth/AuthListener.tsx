@@ -1,16 +1,25 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
 export default function AuthListener() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          console.log("User signed in, inserting into users table...");
+        if (!session?.user) return;
 
-          const user = session.user;
-          if (!user) return;
+        const user = session.user;
 
+        // Csak akkor kezeljük a megerősítést, ha ez egy EMAIL_CONFIRMED esemény
+        if (event === "EMAIL_CONFIRMED") {
+          navigate("/email-confirmation");
+          return;
+        }
+
+        // SIGNED_IN eseménynél csak az users táblát kezeljük
+        if (event === "SIGNED_IN") {
           // Ellenőrizzük, hogy már létezik-e a felhasználó a users táblában
           const { data: existingUser } = await supabase
             .from("users")
@@ -45,7 +54,7 @@ export default function AuthListener() {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   return null;
 }
