@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,160 +11,133 @@ interface RegisterFormData {
   email: string;
   password: string;
   birthDate: string;
-  avatar?: FileList;
 }
 
 export default function RegisterForm() {
   const navigate = useNavigate();
-  const [avatarPreview, setAvatarPreview] = useState<string>();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>();
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const checkUserExists = async (email: string) => {
+    try {
+      const response = await fetch("/api/checkUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to check user existence.");
+      }
+
+      const { exists } = await response.json();
+      return exists;
+    } catch (error) {
+      console.error("Error checking user existence:", error);
+      return false;
     }
   };
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      console.log("Starting registration process...");
-  
-      // 1. Felhasználó regisztrációja Supabase Authentication-ben
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      console.log("Checking if email already exists...");
+
+      const userExists = await checkUserExists(data.email);
+      if (userExists) {
+        alert("A regisztráció már folyamatban van. Kérlek, erősítsd meg az e-mail címed!");
+        return;
+      }
+
+      console.log("Email is available, proceeding with registration...");
+
+      // 🔹 Regisztráció Supabase Auth API-val
+      const { error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            birthDate: data.birthDate,
+          },
+        },
       });
-  
+
       if (signUpError) {
         console.error("Signup error:", signUpError);
         alert(signUpError.message);
         return;
       }
-  
-      // 2. Ellenőrizd, hogy van-e felhasználói ID
-      const userId = authData.user?.id;
-      if (!userId) {
-        console.error("No user ID received from Supabase");
-        alert("Registration failed - no user ID received");
-        return;
-      }
-  
-      console.log("Auth signup successful, user ID:", userId);
-  
-      // 3. A `users` tábla feltöltése a kapott user ID-val
-      const { error: profileError } = await supabase.from("users").insert([
-        {
-          id: userId, // Az `auth.users` táblából kapott ID kell ide
-          name: data.name,
-          email: data.email,
-          birth_date: data.birthDate,
-        },
-      ]);
-  
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
-        alert("Error creating user profile: " + profileError.message);
-        return;
-      }
-  
-      console.log("Profile created successfully");
-      alert("Registration successful! Please check your email to confirm your account.");
+
+      alert("Sikeres regisztráció! Kérlek, ellenőrizd az e-mail fiókodat és erősítsd meg a regisztrációdat.");
       navigate("/login");
     } catch (error) {
       console.error("Unexpected error during registration:", error);
-      alert("An unexpected error occurred during registration");
+      alert("Váratlan hiba történt a regisztráció során.");
     }
   };
-  
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
       <div className="space-y-4 rounded-md">
         <div>
-          <Label htmlFor="name">Full Name</Label>
+          <Label htmlFor="name">Teljes név</Label>
           <Input
             id="name"
             type="text"
             autoComplete="name"
-            {...register("name", { required: "Name is required" })}
+            {...register("name", { required: "A név megadása kötelező" })}
           />
-          {errors.name && (
-            <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
         </div>
 
         <div>
-          <Label htmlFor="email">Email address</Label>
+          <Label htmlFor="email">E-mail cím</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            {...register("email", { required: "Email is required" })}
+            {...register("email", { required: "Az e-mail megadása kötelező" })}
           />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
         </div>
 
         <div>
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Jelszó</Label>
           <Input
             id="password"
             type="password"
             autoComplete="new-password"
             {...register("password", {
-              required: "Password is required",
-              minLength: {
-                value: 8,
-                message: "Password must be at least 8 characters",
-              },
+              required: "A jelszó megadása kötelező",
+              minLength: { value: 8, message: "A jelszónak legalább 8 karakter hosszúnak kell lennie" },
             })}
           />
-          {errors.password && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.password.message}
-            </p>
-          )}
+          {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
         </div>
 
         <div>
-          <Label htmlFor="birthDate">Birth Date</Label>
+          <Label htmlFor="birthDate">Születési dátum</Label>
           <Input
             id="birthDate"
             type="date"
-            {...register("birthDate", { required: "Birth date is required" })}
+            {...register("birthDate", { required: "A születési dátum megadása kötelező" })}
           />
-          {errors.birthDate && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.birthDate.message}
-            </p>
-          )}
+          {errors.birthDate && <p className="mt-1 text-sm text-red-600">{errors.birthDate.message}</p>}
         </div>
       </div>
 
       <div>
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account..." : "Create account"}
+          {isSubmitting ? "Regisztráció folyamatban..." : "Regisztráció"}
         </Button>
       </div>
 
       <div className="text-center">
-        <Button
-          type="button"
-          variant="link"
-          className="text-sm"
-          onClick={() => navigate("/login")}
-        >
-          Already have an account? Sign in
+        <Button type="button" variant="link" className="text-sm" onClick={() => navigate("/login")}>
+          Már van fiókod? Jelentkezz be!
         </Button>
       </div>
     </form>
