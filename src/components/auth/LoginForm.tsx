@@ -17,6 +17,7 @@ export default function LoginForm() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setError,
   } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
@@ -26,10 +27,20 @@ export default function LoginForm() {
         password: data.password,
       });
 
-      if (error) throw error;
-      navigate("/");
+      if (error) {
+        console.error("Login error:", error);
+        setError('email', { 
+          type: 'manual',
+          message: 'Hibás email cím vagy jelszó'
+        });
+        return; // Ne dobjuk el a hibát, csak térjünk vissza
+      }
     } catch (error) {
       console.error("Error logging in:", error);
+      setError('email', { 
+        type: 'manual',
+        message: 'Váratlan hiba történt a bejelentkezés során'
+      });
     }
   };
 
@@ -37,12 +48,12 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
       <div className="space-y-4 rounded-md">
         <div>
-          <Label htmlFor="email">Email address</Label>
+          <Label htmlFor="email">Email cím</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            {...register("email", { required: "Email is required" })}
+            {...register("email", { required: "Az email cím megadása kötelező" })}
           />
           {errors.email && (
             <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -50,12 +61,12 @@ export default function LoginForm() {
         </div>
 
         <div>
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Jelszó</Label>
           <Input
             id="password"
             type="password"
             autoComplete="current-password"
-            {...register("password", { required: "Password is required" })}
+            {...register("password", { required: "A jelszó megadása kötelező" })}
           />
           {errors.password && (
             <p className="mt-1 text-sm text-red-600">
@@ -67,7 +78,7 @@ export default function LoginForm() {
 
       <div>
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {isSubmitting ? "Bejelentkezés..." : "Bejelentkezés"}
         </Button>
       </div>
 
@@ -78,7 +89,7 @@ export default function LoginForm() {
           className="text-sm"
           onClick={() => navigate("/register")}
         >
-          Don't have an account? Sign up
+          Nincs még fiókja? Regisztráljon!
         </Button>
       </div>
     </form>

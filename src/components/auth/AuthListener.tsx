@@ -11,16 +11,14 @@ export default function AuthListener() {
         if (!session?.user) return;
 
         const user = session.user;
+        console.log("Auth event:", event);
 
-        // Csak akkor kezeljük a megerősítést, ha ez egy EMAIL_CONFIRMED esemény
         if (event === "EMAIL_CONFIRMED") {
           navigate("/email-confirmation");
           return;
         }
 
-        // SIGNED_IN eseménynél csak az users táblát kezeljük
         if (event === "SIGNED_IN") {
-          // Ellenőrizzük, hogy már létezik-e a felhasználó a users táblában
           const { data: existingUser } = await supabase
             .from("users")
             .select("id")
@@ -28,11 +26,11 @@ export default function AuthListener() {
             .single();
 
           if (existingUser) {
-            console.log("User already exists in users table, skipping insert.");
+            console.log("User exists, redirecting to home");
+            navigate("/");
             return;
           }
 
-          // Ha nem létezik, beszúrjuk a users táblába
           const { error: profileError } = await supabase.from("users").insert([
             {
               id: user.id,
@@ -46,6 +44,7 @@ export default function AuthListener() {
             console.error("Profile creation error:", profileError);
           } else {
             console.log("Profile created successfully!");
+            navigate("/");
           }
         }
       }
