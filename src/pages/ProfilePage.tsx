@@ -101,10 +101,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <DashboardHeader
-        userName={userData.name}
-        userEmail={user.email || ''}
-      />
+      <DashboardHeader />
       <div className="container mx-auto px-4 py-8 mt-16">
         <h1 className="text-2xl font-bold mb-6">Profil</h1>
         

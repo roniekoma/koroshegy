@@ -1,17 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import DashboardHeader from "./layout/DashboardHeader";
 import BalanceCard from "./dashboard/BalanceCard";
 import TransactionList from "./dashboard/TransactionList";
 import ActionButtons from "./dashboard/ActionButtons";
+import { User } from "@supabase/supabase-js";
 
 interface HomeProps {
-  user?: {
-    name: string;
-    email: string;
-    isAdmin: boolean;
-  };
   balance?: number;
   users?: Array<{
     id: string;
@@ -37,11 +33,6 @@ interface HomeProps {
 }
 
 export default function Home({
-  user = {
-    name: "John Doe",
-    email: "john@example.com",
-    isAdmin: false,
-  },
   balance = 150000,
   lastTransaction = {
     type: "income",
@@ -77,23 +68,7 @@ export default function Home({
 }: HomeProps) {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate("/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
 
-  const handleAdminPanelClick = () => {
-    console.log("Admin panel clicked");
-  };
-
-  const handleProfileClick = () => {
-    console.log("Profile clicked");
-  };
 
   const handlePayment = () => {
     console.log("Payment clicked");
@@ -105,14 +80,7 @@ export default function Home({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardHeader
-        userName={user.name}
-        userEmail={user.email}
-        isAdmin={user.isAdmin}
-        onLogout={handleLogout}
-        onAdminPanelClick={handleAdminPanelClick}
-        onProfileClick={handleProfileClick}
-      />
+      <DashboardHeader />
       <main className="container mx-auto px-4 pt-24 pb-32 space-y-8">
         <BalanceCard
           balance={balance}

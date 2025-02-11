@@ -1,18 +1,48 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
-interface DashboardHeaderProps {
-  userName: string;
-  userEmail: string;
-}
-
-const DashboardHeader = ({
-  userName,
-  userEmail,
-}: DashboardHeaderProps) => {
+const DashboardHeader = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userData, setUserData] = useState<{ name: string } | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+
+        setUser(user);
+
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) {
+          setUserData({ name: userData.name });
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        navigate('/login');
+      }
+    };
+    
+    getUser();
+  }, [navigate]);
+
+  if (!user || !userData) {
+    return null; // Nem jelenítünk meg semmit betöltés közben
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
@@ -24,8 +54,8 @@ const DashboardHeader = ({
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right mr-4">
-            <p className="text-sm font-medium text-gray-900">{userName}</p>
-            <p className="text-xs text-gray-500">{userEmail}</p>
+            <p className="text-sm font-medium text-gray-900">{userData.name}</p>
+            <p className="text-xs text-gray-500">{user.email}</p>
           </div>
           <Button
             variant="ghost"
