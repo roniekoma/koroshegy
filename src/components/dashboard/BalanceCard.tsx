@@ -17,77 +17,108 @@ interface UserBalance {
 interface BalanceCardProps {
   currency?: string;
   lastTransaction?: {
-    type: "income" | "expense";
+    type: "payment" | "expense";
     amount: number;
     date: string;
   };
-  users?: UserBalance[];
 }
 
 export interface BalanceCardRef {
   refresh: () => void;
 }
 
+const calculateMonthsSince2025 = () => {
+  const start = new Date(2025, 0, 1);
+  const now = new Date();
+  const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1; // +1 a mostani hónapot is beleszámoljuk
+  return Math.max(0, months);
+};
+
 const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
   currency = "HUF",
   lastTransaction = {
-    type: "income",
-    amount: 25000,
-    date: "2024-03-20",
+    type: "payment",
+    amount: 0,
+    date: new Date().toISOString(),
   },
-  users = [
-    {
-      id: "1",
-      name: "John Doe",
-      balance: -25000,
-      monthlyFee: 25000,
-      lastPaidMonth: { month: 2, year: 2024 },
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      balance: 0,
-      monthlyFee: 25000,
-      lastPaidMonth: { month: 3, year: 2024 },
-    },
-    {
-      id: "3",
-      name: "Bob Johnson",
-      balance: -50000,
-      monthlyFee: 25000,
-      lastPaidMonth: { month: 1, year: 2024 },
-    },
-  ],
 }, ref) => {
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<UserBalance[]>([]);
 
-  const fetchBalance = async () => {
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      
+      // Fetch total balance (unchanged logic)
+      const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('amount')
         .throwOnError();
 
-      if (error) throw error;
+      if (transactionsError) throw transactionsError;
 
-      const total = data?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
+      const total = transactionsData?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
       setBalance(total);
+
+      // Fetch users with monthly fees
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, name, monthly_fee')
+        .throwOnError();
+
+      if (usersError) throw usersError;
+
+      // Fetch all payment transactions for all users with month and year
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('transactions')
+        .select('user_id, amount, date, month, year')
+        .eq('type', 'payment')
+        .order('date', { ascending: false })
+        .throwOnError();
+
+      if (paymentsError) throw paymentsError;
+
+      const monthsSince2025 = calculateMonthsSince2025();
+
+      const userBalances = usersData.map(user => {
+        const userPayments = paymentsData.filter(payment => payment.user_id === user.id);
+        const totalPayments = userPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const expectedPayments = monthsSince2025 * user.monthly_fee;
+        const balance = expectedPayments - totalPayments;
+        
+        const lastPayment = userPayments[0];
+        const lastPaidMonth = lastPayment && lastPayment.month && lastPayment.year ? {
+          month: parseInt(lastPayment.month),
+          year: parseInt(lastPayment.year)
+        } : undefined;
+
+        return {
+          id: user.id,
+          name: user.name,
+          balance,
+          monthlyFee: user.monthly_fee,
+          lastPaidMonth
+        };
+      });
+
+      setUsers(userBalances);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching balance');
+      console.error('Error fetching data:', err);
+      setError(err instanceof Error ? err.message : 'Error fetching data');
     } finally {
       setLoading(false);
     }
   };
 
   useImperativeHandle(ref, () => ({
-    refresh: fetchBalance
+    refresh: fetchData
   }));
 
   useEffect(() => {
-    fetchBalance();
+    fetchData();
   }, []);
 
   return (
@@ -121,47 +152,53 @@ const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
               User Balances
             </h3>
             <div className="space-y-2">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex flex-col space-y-1 py-2 border-b last:border-b-0"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900">
-                      {user.name}
-                    </span>
-                    <span
-                      className={`text-sm font-medium ${user.balance < 0 ? "text-red-600" : "text-green-600"}`}
-                    >
-                      {new Intl.NumberFormat("hu-HU", {
-                        style: "currency",
-                        currency: currency,
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      }).format(user.balance)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <div className="flex gap-2">
-                      <span>
-                        Monthly fee: {user.monthlyFee.toLocaleString()} Ft
+              {loading ? (
+                <div className="text-center text-gray-500">Loading...</div>
+              ) : error ? (
+                <div className="text-center text-red-500">{error}</div>
+              ) : (
+                users.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex flex-col space-y-1 py-2 border-b last:border-b-0"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900">
+                        {user.name}
                       </span>
-                      {user.lastPaidMonth && (
+                      <span
+                        className={`text-sm font-medium ${user.balance > 0 ? "text-red-600" : "text-green-600"}`}
+                      >
+                        {new Intl.NumberFormat("hu-HU", {
+                          style: "currency",
+                          currency: currency,
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(user.balance)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex gap-2">
                         <span>
-                          • Last paid:{" "}
-                          {new Date(
-                            user.lastPaidMonth.year,
-                            user.lastPaidMonth.month - 1,
-                          ).toLocaleDateString("hu-HU", {
-                            year: "numeric",
-                            month: "long",
-                          })}
+                          Monthly fee: {user.monthlyFee.toLocaleString()} Ft
                         </span>
-                      )}
+                        {user.lastPaidMonth && (
+                          <span>
+                            • Last paid:{" "}
+                            {new Date(
+                              user.lastPaidMonth.year,
+                              user.lastPaidMonth.month - 1,
+                            ).toLocaleDateString("hu-HU", {
+                              year: "numeric",
+                              month: "long",
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -172,7 +209,7 @@ const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
             </h3>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {lastTransaction.type === "income" ? (
+                {lastTransaction.type === "payment" ? (
                   <ArrowUpCircle className="w-5 h-5 text-green-500" />
                 ) : (
                   <ArrowDownCircle className="w-5 h-5 text-red-500" />
@@ -182,9 +219,9 @@ const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
                 </span>
               </div>
               <span
-                className={`font-medium ${lastTransaction.type === "income" ? "text-green-600" : "text-red-600"}`}
+                className={`font-medium ${lastTransaction.type === "payment" ? "text-green-600" : "text-red-600"}`}
               >
-                {lastTransaction.type === "income" ? "+" : "-"}
+                {lastTransaction.type === "payment" ? "+" : "-"}
                 {new Intl.NumberFormat("hu-HU", {
                   style: "currency",
                   currency: currency,
