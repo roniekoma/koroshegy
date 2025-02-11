@@ -17,6 +17,7 @@ interface PaymentModalProps {
 interface UserData {
   id: string;
   name: string;
+  monthly_fee: number;
 }
 
 export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModalProps) {
@@ -38,7 +39,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
 
         const { data: usersData, error } = await supabase
           .from("users")
-          .select("id, name")
+          .select("id, name, monthly_fee")
           .order("name");
 
         if (error) throw error;
@@ -48,6 +49,11 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
           // Ha van bejelentkezett felhasználó, állítsuk be alapértelmezettként
           if (user) {
             setSelectedUserId(user.id);
+            // Állítsuk be az összeget a kiválasztott felhasználó monthly_fee értéke alapján
+            const selectedUser = usersData.find(u => u.id === user.id);
+            if (selectedUser) {
+              setAmount(selectedUser.monthly_fee.toString());
+            }
           }
         }
       } catch (error) {
@@ -64,6 +70,15 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
       loadUsers();
     }
   }, [isOpen]);
+
+  // Felhasználó kiválasztásakor frissítjük az összeget
+  const handleUserChange = (userId: string) => {
+    setSelectedUserId(userId);
+    const selectedUser = users.find(user => user.id === userId);
+    if (selectedUser) {
+      setAmount(selectedUser.monthly_fee.toString());
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +130,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="user">Felhasználó</Label>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <Select value={selectedUserId} onValueChange={handleUserChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Válassz felhasználót" />
               </SelectTrigger>
@@ -162,9 +177,8 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
               id="amount"
               type="number"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="25000"
-              required
+              readOnly
+              className="bg-gray-100"
             />
           </div>
 
