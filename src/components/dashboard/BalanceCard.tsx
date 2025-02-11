@@ -1,6 +1,5 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent } from "../ui/card";
-import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface UserBalance {
@@ -16,11 +15,6 @@ interface UserBalance {
 
 interface BalanceCardProps {
   currency?: string;
-  lastTransaction?: {
-    type: "payment" | "expense";
-    amount: number;
-    date: string;
-  };
 }
 
 export interface BalanceCardRef {
@@ -36,11 +30,6 @@ const calculateMonthsSince2025 = () => {
 
 const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
   currency = "HUF",
-  lastTransaction = {
-    type: "payment",
-    amount: 0,
-    date: new Date().toISOString(),
-  },
 }, ref) => {
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -199,36 +188,6 @@ const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
                   </div>
                 ))
               )}
-            </div>
-          </div>
-
-          {/* Last Transaction Section */}
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">
-              Last Transaction
-            </h3>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {lastTransaction.type === "payment" ? (
-                  <ArrowUpCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <ArrowDownCircle className="w-5 h-5 text-red-500" />
-                )}
-                <span className="text-sm text-gray-600">
-                  {new Date(lastTransaction.date).toLocaleDateString("hu-HU")}
-                </span>
-              </div>
-              <span
-                className={`font-medium ${lastTransaction.type === "payment" ? "text-green-600" : "text-red-600"}`}
-              >
-                {lastTransaction.type === "payment" ? "+" : "-"}
-                {new Intl.NumberFormat("hu-HU", {
-                  style: "currency",
-                  currency: currency,
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }).format(lastTransaction.amount)}
-              </span>
             </div>
           </div>
         </div>
