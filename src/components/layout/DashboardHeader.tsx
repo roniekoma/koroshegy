@@ -6,13 +6,11 @@ import { useNavigate } from "react-router-dom";
 interface DashboardHeaderProps {
   userName: string;
   userEmail: string;
-  onLogout: () => void;
 }
 
 const DashboardHeader = ({
   userName,
   userEmail,
-  onLogout,
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
 
@@ -39,7 +37,7 @@ const DashboardHeader = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onLogout}
+            onClick={() => navigate('/logout')}
           >
             <LogOut className="h-4 w-4" />
           </Button>

@@ -15,7 +15,7 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [isChanging, setIsChanging] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function ProfilePage() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          window.location.href = '/login';
+          navigate('/login');
           return;
         }
 
@@ -41,54 +41,63 @@ export default function ProfilePage() {
         }
       } catch (error) {
         console.error('Error:', error);
+        navigate('/login');
       }
     };
     
     getUser();
-  }, []);
+  }, [navigate]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/login';
-  };
+
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth event:', event);
+      if (event === 'USER_UPDATED') {
+        console.log('Password update detected, updating UI...');
+        setSuccess("A jelszó sikeresen megváltoztatva!");
+        setNewPassword("");
+        setConfirmPassword("");
+        setIsChangingPassword(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isChanging) return;
+    if (isChangingPassword) return;
 
     if (newPassword !== confirmPassword) {
       setError("Az új jelszavak nem egyeznek meg");
       return;
     }
 
-    setIsChanging(true);
+    setIsChangingPassword(true);
     setError("");
     setSuccess("");
 
     try {
+      console.log('Sending password update request...');
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Password update error:', error);
+        throw error;
+      }
 
-      setSuccess("A jelszó sikeresen megváltoztatva! Átirányítás...");
-      
-      // Várunk egy másodpercet hogy a felhasználó lássa a sikeres üzenetet
-      setTimeout(async () => {
-        try {
-          await supabase.auth.signOut();
-          window.location.href = '/login';
-        } catch (error) {
-          console.error('Logout error:', error);
-          window.location.href = '/login';
-        }
-      }, 1000);
-      
+      console.log('Password update request successful');
+      // Az állapot frissítést az auth listener fogja kezelni
     } catch (error: any) {
-      setError(error.message);
-      setIsChanging(false);
+      console.error('Error in password change:', error);
+      setError(error.message || "Hiba történt a jelszó módosítása során.");
+      setIsChangingPassword(false);
     }
   };
 
@@ -96,12 +105,13 @@ export default function ProfilePage() {
     return <div className="min-h-screen flex items-center justify-center">Betöltés...</div>;
   }
 
+
+
   return (
     <>
       <DashboardHeader
         userName={userData.name}
         userEmail={user.email || ''}
-        onLogout={handleLogout}
       />
       <div className="container mx-auto px-4 py-8 mt-16">
         <h1 className="text-2xl font-bold mb-6">Profil</h1>
@@ -125,7 +135,7 @@ export default function ProfilePage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                disabled={isChanging}
+                disabled={isChangingPassword}
               />
             </div>
             <div>
@@ -136,13 +146,13 @@ export default function ProfilePage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={isChanging}
+                disabled={isChangingPassword}
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             {success && <p className="text-green-500 text-sm">{success}</p>}
-            <Button type="submit" disabled={isChanging}>
-              {isChanging ? "Jelszó módosítása..." : "Jelszó módosítása"}
+            <Button type="submit" disabled={isChangingPassword}>
+              {isChangingPassword ? "Jelszó módosítása..." : "Jelszó módosítása"}
             </Button>
           </form>
         </Card>
