@@ -27,6 +27,8 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nem vagy bejelentkezve!");
+      if (!amount) throw new Error("Add meg az összeget!");
+      if (!description) throw new Error("Add meg a leírást!");
 
       const { error } = await supabase.from("transactions").insert({
         amount: -Math.abs(parseInt(amount)), // Mindig negatív szám

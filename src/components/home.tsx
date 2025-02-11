@@ -2,13 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import DashboardHeader from "./layout/DashboardHeader";
-import BalanceCard from "./dashboard/BalanceCard";
+import BalanceCard, { BalanceCardRef } from "./dashboard/BalanceCard";
 import TransactionList, { TransactionListRef } from "./dashboard/TransactionList";
 import ActionButtons from "./dashboard/ActionButtons";
 import { User } from "@supabase/supabase-js";
 
 interface HomeProps {
-  balance?: number;
   users?: Array<{
     id: string;
     name: string;
@@ -23,7 +22,6 @@ interface HomeProps {
 }
 
 export default function Home({
-  balance = 150000,
   lastTransaction = {
     type: "income",
     amount: 25000,
@@ -32,17 +30,11 @@ export default function Home({
 }: HomeProps) {
   const navigate = useNavigate();
   const transactionListRef = useRef<TransactionListRef>(null);
-
-  const handlePayment = () => {
-    console.log("Payment clicked");
-  };
-
-  const handleExpense = () => {
-    console.log("Expense clicked");
-  };
+  const balanceCardRef = useRef<BalanceCardRef>(null);
 
   const handleTransactionComplete = () => {
     transactionListRef.current?.refresh();
+    balanceCardRef.current?.refresh();
   };
 
   return (
@@ -50,7 +42,7 @@ export default function Home({
       <DashboardHeader />
       <main className="container mx-auto px-4 pt-24 pb-32 space-y-8">
         <BalanceCard
-          balance={balance}
+          ref={balanceCardRef}
           currency="HUF"
           lastTransaction={lastTransaction}
           users={[
@@ -80,8 +72,6 @@ export default function Home({
         <TransactionList ref={transactionListRef} />
       </main>
       <ActionButtons 
-        onPayment={handlePayment} 
-        onExpense={handleExpense}
         onTransactionComplete={handleTransactionComplete}
       />
     </div>

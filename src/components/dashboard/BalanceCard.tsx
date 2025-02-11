@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent } from "../ui/card";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -24,7 +24,11 @@ interface BalanceCardProps {
   users?: UserBalance[];
 }
 
-const BalanceCard = ({
+export interface BalanceCardRef {
+  refresh: () => void;
+}
+
+const BalanceCard = forwardRef<BalanceCardRef, BalanceCardProps>(({
   currency = "HUF",
   lastTransaction = {
     type: "income",
@@ -54,7 +58,7 @@ const BalanceCard = ({
       lastPaidMonth: { month: 1, year: 2024 },
     },
   ],
-}: BalanceCardProps) => {
+}, ref) => {
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +81,10 @@ const BalanceCard = ({
       setLoading(false);
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    refresh: fetchBalance
+  }));
 
   useEffect(() => {
     fetchBalance();
@@ -190,6 +198,6 @@ const BalanceCard = ({
       </CardContent>
     </Card>
   );
-};
+});
 
 export default BalanceCard;

@@ -86,6 +86,9 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
 
     setIsSubmitting(true);
     try {
+      if (!currentUser) throw new Error("Nem vagy bejelentkezve!");
+      if (!selectedUserId) throw new Error("Válassz felhasználót!");
+
       const { error } = await supabase.from("transactions").insert({
         amount: parseInt(amount),
         date: new Date().toISOString(),
@@ -93,7 +96,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
         user_id: selectedUserId,
         month: parseInt(month),
         year: parseInt(year),
-        created_by: currentUser?.id,
+        created_by: currentUser.id,
       });
 
       if (error) throw error;
