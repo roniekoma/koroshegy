@@ -89,6 +89,22 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
       if (!currentUser) throw new Error("Nem vagy bejelentkezve!");
       if (!selectedUserId) throw new Error("Válassz felhasználót!");
 
+      // Check for existing payment in the same month/year
+      const { data: existingPayments, error: checkError } = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("user_id", selectedUserId)
+        .eq("type", "payment")
+        .eq("month", parseInt(month))
+        .eq("year", parseInt(year))
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (existingPayments && existingPayments.length > 0) {
+        throw new Error(`Már van rögzítve befizetés ${year}. év ${month}. hónapjára`);
+      }
+
       const { error } = await supabase.from("transactions").insert({
         amount: parseInt(amount),
         date: new Date().toISOString(),
@@ -116,7 +132,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
       console.error("Error creating payment:", error);
       toast({
         title: "Hiba",
-        description: "Nem sikerült létrehozni a befizetést",
+        description: error instanceof Error ? error.message : "Nem sikerült létrehozni a befizetést",
         variant: "destructive",
       });
     } finally {
