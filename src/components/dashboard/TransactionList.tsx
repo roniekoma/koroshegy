@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/lib/supabase";
 
 interface Transaction {
   id: string;
@@ -14,53 +15,82 @@ interface Transaction {
   year?: number;
 }
 
+interface User {
+  id: string;
+  name: string;
+}
+
 interface TransactionListProps {
   transactions?: Transaction[];
 }
 
 export default function TransactionList({
-  transactions = [
-    {
-      id: "1",
-      date: "2024-03-20",
-      amount: 50000,
-      type: "payment",
-      description: "Monthly maintenance fee",
-      user: "John Doe",
-      month: 3,
-      year: 2024,
-    },
-    {
-      id: "2",
-      date: "2024-03-19",
-      amount: -15000,
-      type: "expense",
-      description: "Utility bills",
-    },
-    {
-      id: "3",
-      date: "2024-03-18",
-      amount: -25000,
-      type: "expense",
-      description: "Building repairs",
-    },
-  ],
+  transactions = [],
 }: TransactionListProps) {
+  const [fetchedTransactions, setFetchedTransactions] = useState<Transaction[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { data: usersData, error } = await supabase
+          .from("users")
+          .select("id, name");
+
+        if (error) throw error;
+
+        setUsers(usersData || []);
+      } catch (error) {
+        console.error("Error loading users:", error);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        const { data: transactionsData, error } = await supabase
+          .from("transactions")
+          .select("id, date, amount, type, description, user_id, month, year")
+          .order("date", { ascending: false })
+          .limit(10);
+
+        if (error) throw error;
+
+        const transactionsWithUserNames = transactionsData.map(transaction => {
+          const user = users.find(u => u.id === transaction.user_id);
+          return {
+            ...transaction,
+            user: user ? user.name : "",
+          };
+        });
+
+        setFetchedTransactions(transactionsWithUserNames);
+      } catch (error) {
+        console.error("Error loading transactions:", error);
+      }
+    };
+
+    loadTransactions();
+  }, [users]);
+
   return (
     <Card className="w-full h-[500px] bg-white p-6">
       <h2 className="text-xl font-semibold mb-4 text-gray-900">
-        Recent Transactions
+        Recent Transactions (last 10)
       </h2>
       <ScrollArea className="h-[420px] w-full rounded-md">
         <div className="space-y-4">
-          {transactions.map((transaction) => (
+          {fetchedTransactions.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
             >
               <div className="flex flex-col">
                 <span className="font-medium text-gray-900">
-                  {transaction.description}
+                  {transaction.description || (transaction.type === "payment" ? "Havi befizetés" : "")}
                   {transaction.type === "payment" && transaction.user && (
                     <span className="text-sm text-gray-500 ml-1">
                       - {transaction.user}
@@ -98,7 +128,7 @@ export default function TransactionList({
                   }
                   className="capitalize"
                 >
-                  {transaction.type}
+                  {transaction.type === "payment" ? "Befizetés" : "Kiadás"}
                 </Badge>
               </div>
             </div>
