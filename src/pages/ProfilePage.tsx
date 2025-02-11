@@ -52,9 +52,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth event:', event);
       if (event === 'USER_UPDATED') {
-        console.log('Password update detected, updating UI...');
         setSuccess("A jelszó sikeresen megváltoztatva!");
         setNewPassword("");
         setConfirmPassword("");
@@ -82,20 +80,14 @@ export default function ProfilePage() {
     setSuccess("");
 
     try {
-      console.log('Sending password update request...');
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) {
-        console.error('Password update error:', error);
-        throw error;
-      }
-
-      console.log('Password update request successful');
+      if (error) throw error;
       // Az állapot frissítést az auth listener fogja kezelni
     } catch (error: any) {
-      console.error('Error in password change:', error);
+
       setError(error.message || "Hiba történt a jelszó módosítása során.");
       setIsChangingPassword(false);
     }

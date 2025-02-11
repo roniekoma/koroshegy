@@ -20,8 +20,6 @@ export default function AuthListener() {
 
     // Auth változások figyelése
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event, "Session:", session ? "exists" : "null");
-
       // Csak a kijelentkezést kezeljük itt
       if ((event === "SIGNED_OUT" || !session) && !isAuthPage(location.pathname)) {
         window.location.href = '/login';

@@ -11,7 +11,7 @@ export default function LogoutPage() {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
       } catch (error) {
-        console.error('Logout error:', error);
+        // Hiba esetén is átirányítunk
       } finally {
         // Mindenképp átirányítunk a login oldalra, még hiba esetén is
         navigate('/login');
