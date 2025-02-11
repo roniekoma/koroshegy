@@ -28,6 +28,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
   const [amount, setAmount] = useState<string>("");
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [month, setMonth] = useState<string>((new Date().getMonth() + 1).toString());
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Felhasználók betöltése
@@ -107,7 +108,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
 
       const { error } = await supabase.from("transactions").insert({
         amount: parseInt(amount),
-        date: new Date().toISOString(),
+        date: date, // Using the selected date
         type: "payment",
         user_id: selectedUserId,
         month: parseInt(month),
@@ -128,6 +129,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
       setAmount("");
       setMonth((new Date().getMonth() + 1).toString());
       setYear(new Date().getFullYear().toString());
+      setDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error("Error creating payment:", error);
       toast({
@@ -162,7 +164,16 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
               </SelectContent>
             </Select>
           </div>
-
+          <div className="space-y-2">
+            <Label htmlFor="date">Dátum</Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year">Év</Label>

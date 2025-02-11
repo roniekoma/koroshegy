@@ -17,6 +17,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
   const { toast } = useToast();
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +33,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
 
       const { error } = await supabase.from("transactions").insert({
         amount: -Math.abs(parseInt(amount)), // Mindig negatív szám
-        date: new Date().toISOString(),
+        date: date,
         type: "expense",
         description: description.trim(),
         created_by: user.id,
@@ -50,6 +51,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
       onClose();
       setAmount("");
       setDescription("");
+      setDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error("Error creating expense:", error);
       toast({
@@ -69,6 +71,16 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
           <DialogTitle>Új kiadás rögzítése</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="date">Dátum</Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="amount">Összeg (Ft)</Label>
             <Input
