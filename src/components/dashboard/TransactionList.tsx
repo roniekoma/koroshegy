@@ -2,6 +2,8 @@ import React, { useEffect, useState, forwardRef, useImperativeHandle } from "rea
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { FileIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
@@ -13,6 +15,7 @@ interface Transaction {
   user?: string;
   month?: number;
   year?: number;
+  receipt_url?: string | null;
 }
 
 interface User {
@@ -50,7 +53,7 @@ const TransactionList = forwardRef<TransactionListRef>((props, ref) => {
     try {
       const { data: transactionsData, error } = await supabase
         .from("transactions")
-        .select("id, date, amount, type, description, user_id, month, year")
+        .select("id, date, amount, type, description, user_id, month, year, receipt_url")
         .order("date", { ascending: false })
         .limit(10);
 
@@ -67,6 +70,28 @@ const TransactionList = forwardRef<TransactionListRef>((props, ref) => {
       setTransactions(transactionsWithUserNames);
     } catch (error) {
       console.error("Error loading transactions:", error);
+    }
+  };
+
+  const handleDownload = async (receipt_url: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('expense-receipts')
+        .download(receipt_url);
+      
+      if (error) throw error;
+
+      // Fájl letöltése
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = receipt_url.split('/').pop() || 'receipt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
     }
   };
 
@@ -124,6 +149,16 @@ const TransactionList = forwardRef<TransactionListRef>((props, ref) => {
                   {transaction.amount >= 0 ? "+" : ""}
                   {transaction.amount.toLocaleString()} Ft
                 </span>
+                {transaction.receipt_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(transaction.receipt_url!)}
+                    className="px-2"
+                  >
+                    <FileIcon className="h-4 w-4" />
+                  </Button>
+                )}
                 <Badge
                   variant={
                     transaction.type === "payment" ? "default" : "destructive"

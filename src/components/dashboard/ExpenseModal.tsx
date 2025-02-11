@@ -19,6 +19,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
   const [description, setDescription] = useState<string>("");
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +32,25 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
       if (!amount) throw new Error("Add meg az összeget!");
       if (!description) throw new Error("Add meg a leírást!");
 
+      let fileUrl = null;
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('expense-receipts')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+        fileUrl = uploadData?.path;
+      }
+
       const { error } = await supabase.from("transactions").insert({
-        amount: -Math.abs(parseInt(amount)), // Mindig negatív szám
+        amount: -Math.abs(parseInt(amount)),
         date: date,
         type: "expense",
         description: description.trim(),
         created_by: user.id,
+        receipt_url: fileUrl
       });
 
       if (error) throw error;
@@ -52,15 +66,22 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
       setAmount("");
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
+      setFile(null);
     } catch (error) {
       console.error("Error creating expense:", error);
       toast({
         title: "Hiba",
-        description: "Nem sikerült rögzíteni a kiadást",
+        description: error instanceof Error ? error.message : "Nem sikerült rögzíteni a kiadást",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
     }
   };
 
@@ -101,6 +122,17 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModa
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Pl.: Villanyszerelés"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="receipt">Számla vagy bizonylat (opcionális)</Label>
+            <Input
+              id="receipt"
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="cursor-pointer"
             />
           </div>
 
