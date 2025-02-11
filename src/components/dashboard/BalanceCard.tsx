@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "../ui/card";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface UserBalance {
   id: string;
@@ -14,7 +15,6 @@ interface UserBalance {
 }
 
 interface BalanceCardProps {
-  balance?: number;
   currency?: string;
   lastTransaction?: {
     type: "income" | "expense";
@@ -25,7 +25,6 @@ interface BalanceCardProps {
 }
 
 const BalanceCard = ({
-  balance = 150000,
   currency = "HUF",
   lastTransaction = {
     type: "income",
@@ -56,6 +55,33 @@ const BalanceCard = ({
     },
   ],
 }: BalanceCardProps) => {
+  const [balance, setBalance] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBalance = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('amount')
+        .throwOnError();
+
+      if (error) throw error;
+
+      const total = data?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
+      setBalance(total);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error fetching balance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBalance();
+  }, []);
+
   return (
     <Card className="w-full max-w-[800px] mx-auto bg-white shadow-lg">
       <CardContent className="p-6">
@@ -66,12 +92,18 @@ const BalanceCard = ({
               Current Balance
             </h2>
             <div className="text-4xl font-bold text-gray-900">
-              {new Intl.NumberFormat("hu-HU", {
-                style: "currency",
-                currency: currency,
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              }).format(balance)}
+              {loading ? (
+                "Loading..."
+              ) : error ? (
+                <span className="text-red-500 text-sm">Error loading balance</span>
+              ) : (
+                new Intl.NumberFormat("hu-HU", {
+                  style: "currency",
+                  currency: currency,
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }).format(balance)
+              )}
             </div>
           </div>
 
