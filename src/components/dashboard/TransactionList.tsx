@@ -20,14 +20,8 @@ interface User {
   name: string;
 }
 
-interface TransactionListProps {
-  transactions?: Transaction[];
-}
-
-export default function TransactionList({
-  transactions = [],
-}: TransactionListProps) {
-  const [fetchedTransactions, setFetchedTransactions] = useState<Transaction[]>([]);
+export default function TransactionList() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
@@ -67,7 +61,7 @@ export default function TransactionList({
           };
         });
 
-        setFetchedTransactions(transactionsWithUserNames);
+        setTransactions(transactionsWithUserNames);
       } catch (error) {
         console.error("Error loading transactions:", error);
       }
@@ -83,7 +77,7 @@ export default function TransactionList({
       </h2>
       <ScrollArea className="h-[420px] w-full rounded-md">
         <div className="space-y-4">
-          {fetchedTransactions.map((transaction) => (
+          {transactions.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"

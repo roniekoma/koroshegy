@@ -20,16 +20,6 @@ interface HomeProps {
     amount: number;
     date: string;
   };
-  transactions?: Array<{
-    id: string;
-    date: string;
-    amount: number;
-    type: "payment" | "expense";
-    description: string;
-    user?: string;
-    month?: number;
-    year?: number;
-  }>;
 }
 
 export default function Home({
@@ -39,36 +29,8 @@ export default function Home({
     amount: 25000,
     date: "2024-03-20",
   },
-  transactions = [
-    {
-      id: "1",
-      date: "2024-03-20",
-      amount: 50000,
-      type: "payment",
-      description: "Monthly maintenance fee",
-      user: "John Doe",
-      month: 3,
-      year: 2024,
-    },
-    {
-      id: "2",
-      date: "2024-03-19",
-      amount: -15000,
-      type: "expense",
-      description: "Utility bills",
-    },
-    {
-      id: "3",
-      date: "2024-03-18",
-      amount: -25000,
-      type: "expense",
-      description: "Building repairs",
-    },
-  ],
 }: HomeProps) {
   const navigate = useNavigate();
-
-
 
   const handlePayment = () => {
     console.log("Payment clicked");
@@ -110,7 +72,7 @@ export default function Home({
             },
           ]}
         />
-        <TransactionList transactions={transactions} />
+        <TransactionList />
       </main>
       <ActionButtons onPayment={handlePayment} onExpense={handleExpense} />
     </div>
