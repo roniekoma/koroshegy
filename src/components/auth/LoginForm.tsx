@@ -33,8 +33,12 @@ export default function LoginForm() {
           type: 'manual',
           message: 'Hibás email cím vagy jelszó'
         });
-        return; // Ne dobjuk el a hibát, csak térjünk vissza
+        return;
       }
+
+      // Sikeres bejelentkezés után átirányítunk a főoldalra
+      window.location.href = '/';
+      
     } catch (error) {
       console.error("Error logging in:", error);
       setError('email', { 
@@ -87,7 +91,7 @@ export default function LoginForm() {
           type="button"
           variant="link"
           className="text-sm"
-          onClick={() => navigate("/register")}
+          onClick={() => window.location.href = '/register'}
         >
           Nincs még fiókja? Regisztráljon!
         </Button>

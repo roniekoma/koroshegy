@@ -1,24 +1,21 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
   userName: string;
   userEmail: string;
-  isAdmin: boolean;
   onLogout: () => void;
-  onAdminPanelClick: () => void;
-  onProfileClick: () => void;
 }
 
 const DashboardHeader = ({
   userName,
   userEmail,
-  isAdmin,
   onLogout,
-  onAdminPanelClick,
-  onProfileClick,
 }: DashboardHeaderProps) => {
+  const navigate = useNavigate();
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -32,38 +29,24 @@ const DashboardHeader = ({
             <p className="text-sm font-medium text-gray-900">{userName}</p>
             <p className="text-xs text-gray-500">{userEmail}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onAdminPanelClick}
-                title="Admin Panel"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onProfileClick}
-              title="Profile"
-            >
-              <User className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onLogout}
-              title="Logout"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/profile")}
+          >
+            <User className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onLogout}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </header>
   );
-};
+}
 
 export default DashboardHeader;
