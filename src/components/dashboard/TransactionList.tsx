@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,11 @@ interface User {
   name: string;
 }
 
-export default function TransactionList() {
+export interface TransactionListRef {
+  refresh: () => void;
+}
+
+const TransactionList = forwardRef<TransactionListRef>((props, ref) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
@@ -42,31 +46,35 @@ export default function TransactionList() {
     loadUsers();
   }, []);
 
+  const loadTransactions = async () => {
+    try {
+      const { data: transactionsData, error } = await supabase
+        .from("transactions")
+        .select("id, date, amount, type, description, user_id, month, year")
+        .order("date", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const transactionsWithUserNames = transactionsData.map(transaction => {
+        const user = users.find(u => u.id === transaction.user_id);
+        return {
+          ...transaction,
+          user: user ? user.name : "",
+        };
+      });
+
+      setTransactions(transactionsWithUserNames);
+    } catch (error) {
+      console.error("Error loading transactions:", error);
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    refresh: loadTransactions
+  }));
+
   useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        const { data: transactionsData, error } = await supabase
-          .from("transactions")
-          .select("id, date, amount, type, description, user_id, month, year")
-          .order("date", { ascending: false })
-          .limit(10);
-
-        if (error) throw error;
-
-        const transactionsWithUserNames = transactionsData.map(transaction => {
-          const user = users.find(u => u.id === transaction.user_id);
-          return {
-            ...transaction,
-            user: user ? user.name : "",
-          };
-        });
-
-        setTransactions(transactionsWithUserNames);
-      } catch (error) {
-        console.error("Error loading transactions:", error);
-      }
-    };
-
     loadTransactions();
   }, [users]);
 
@@ -131,4 +139,6 @@ export default function TransactionList() {
       </ScrollArea>
     </Card>
   );
-}
+});
+
+export default TransactionList;

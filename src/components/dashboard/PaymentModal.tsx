@@ -11,6 +11,7 @@ import { User } from "@supabase/supabase-js";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 interface UserData {
@@ -18,7 +19,7 @@ interface UserData {
   name: string;
 }
 
-export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModalProps) {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -88,6 +89,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         className: "bg-green-500 text-white",
       });
 
+      onSuccess?.();
       onClose();
       setAmount("");
       setMonth((new Date().getMonth() + 1).toString());

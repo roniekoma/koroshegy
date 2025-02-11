@@ -7,11 +7,13 @@ import ExpenseModal from "./ExpenseModal";
 interface ActionButtonsProps {
   onExpense?: () => void;
   disabled?: boolean;
+  onTransactionComplete?: () => void;
 }
 
 const ActionButtons = ({
   onExpense = () => console.log("Expense clicked"),
   disabled = false,
+  onTransactionComplete,
 }: ActionButtonsProps) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -39,10 +41,12 @@ const ActionButtons = ({
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
+        onSuccess={onTransactionComplete}
       />
       <ExpenseModal
         isOpen={isExpenseModalOpen}
         onClose={() => setIsExpenseModalOpen(false)}
+        onSuccess={onTransactionComplete}
       />
     </>
   );

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import DashboardHeader from "./layout/DashboardHeader";
 import BalanceCard from "./dashboard/BalanceCard";
-import TransactionList from "./dashboard/TransactionList";
+import TransactionList, { TransactionListRef } from "./dashboard/TransactionList";
 import ActionButtons from "./dashboard/ActionButtons";
 import { User } from "@supabase/supabase-js";
 
@@ -31,6 +31,7 @@ export default function Home({
   },
 }: HomeProps) {
   const navigate = useNavigate();
+  const transactionListRef = useRef<TransactionListRef>(null);
 
   const handlePayment = () => {
     console.log("Payment clicked");
@@ -38,6 +39,10 @@ export default function Home({
 
   const handleExpense = () => {
     console.log("Expense clicked");
+  };
+
+  const handleTransactionComplete = () => {
+    transactionListRef.current?.refresh();
   };
 
   return (
@@ -72,9 +77,13 @@ export default function Home({
             },
           ]}
         />
-        <TransactionList />
+        <TransactionList ref={transactionListRef} />
       </main>
-      <ActionButtons onPayment={handlePayment} onExpense={handleExpense} />
+      <ActionButtons 
+        onPayment={handlePayment} 
+        onExpense={handleExpense}
+        onTransactionComplete={handleTransactionComplete}
+      />
     </div>
   );
 }

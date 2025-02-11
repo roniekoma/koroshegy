@@ -10,9 +10,10 @@ import { supabase } from "@/lib/supabase";
 interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function ExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
+export default function ExpenseModal({ isOpen, onClose, onSuccess }: ExpenseModalProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -43,6 +44,7 @@ export default function ExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
         className: "bg-green-500 text-white",
       });
 
+      onSuccess?.();
       onClose();
       setAmount("");
       setDescription("");
