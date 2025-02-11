@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -47,7 +47,15 @@ const DashboardHeader = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/')}
+            className="hover:bg-gray-100"
+          >
+            <Home className="h-5 w-5 text-gray-600" />
+          </Button>
           <h1 className="text-2xl font-semibold text-gray-900">
             Kőröshegy (Petőfi Sándor u. 59) költségnyilvántartás
           </h1>
