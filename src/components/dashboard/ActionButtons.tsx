@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MinusCircle } from "lucide-react";
 import PaymentModal from "./PaymentModal";
+import ExpenseModal from "./ExpenseModal";
 
 interface ActionButtonsProps {
   onExpense?: () => void;
@@ -13,6 +14,7 @@ const ActionButtons = ({
   disabled = false,
 }: ActionButtonsProps) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-center gap-4 shadow-lg z-10">
@@ -25,7 +27,7 @@ const ActionButtons = ({
           Payment
         </Button>
         <Button
-          onClick={onExpense}
+          onClick={() => setIsExpenseModalOpen(true)}
           disabled={disabled}
           variant="destructive"
           className="w-40"
@@ -37,6 +39,10 @@ const ActionButtons = ({
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
+      />
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
       />
     </>
   );
