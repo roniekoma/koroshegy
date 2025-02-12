@@ -69,7 +69,10 @@ export default function Home({
             },
           ]}
         />
-        <TransactionList ref={transactionListRef} />
+        <TransactionList 
+          ref={transactionListRef} 
+          onTransactionDeleted={handleTransactionComplete}
+        />
       </main>
       <ActionButtons 
         onTransactionComplete={handleTransactionComplete}
