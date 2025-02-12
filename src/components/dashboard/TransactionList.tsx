@@ -48,6 +48,15 @@ const TransactionList = forwardRef<TransactionListRef, TransactionListProps>(({ 
   const [users, setUsers] = useState<User[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserEmail(user?.email || null);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -234,14 +243,16 @@ const TransactionList = forwardRef<TransactionListRef, TransactionListProps>(({ 
                       <FileIcon className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(transaction)}
-                    className="px-2"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+                  {currentUserEmail === "dankhazi.peter@webdream.hu" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(transaction)}
+                      className="px-2"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  )}
                   <Badge
                     variant={
                       transaction.type === "payment" ? "default" : "destructive"
@@ -257,23 +268,25 @@ const TransactionList = forwardRef<TransactionListRef, TransactionListProps>(({ 
         </ScrollArea>
       </Card>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Biztosan törölni szeretnéd ezt a tranzakciót?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ez a művelet nem vonható vissza.
-              {transactionToDelete?.receipt_url && " A csatolt fájl is törlésre kerül."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Mégsem</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600">
-              Törlés
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {currentUserEmail === "dankhazi.peter@webdream.hu" && (
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Biztosan törölni szeretnéd ezt a tranzakciót?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ez a művelet nem vonható vissza.
+                {transactionToDelete?.receipt_url && " A csatolt fájl is törlésre kerül."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Mégsem</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600">
+                Törlés
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   );
 });
